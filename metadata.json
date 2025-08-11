@@ -1,0 +1,6 @@
+{
+  "name": "QA Document Generator",
+  "description": "An AI-powered tool to generate comprehensive test plans, QA documents, feature manuals, and test cases based on a video or feature description.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
