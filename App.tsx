@@ -251,7 +251,7 @@ const App: React.FC = () => {
                     />
                     </main>
                     <footer className="text-center mt-12 text-slate-500 text-sm">
-                        <p>Powered by Google Gemini. UI/UX designed for production-readiness.</p>
+                        <p>Powered by Google Gemini. UI/UX designed for production-readiness. Created BY: Hiran Basnet</p>
                     </footer>
                 </div>
             </div>

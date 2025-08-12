@@ -10,16 +10,7 @@ export interface TestCase {
 
 export interface UserStory {
     story: string;
-    priority: 'High' | 'Medium' | 'Low';
     acceptanceCriteria: string[];
-    estimationPoints: number;
-}
-
-export interface AccessibilityCheck {
-    wcagGuideline: string;
-
-    description: string;
-    testSuggestion: string;
 }
 
 export interface GeneratedDocuments {
@@ -28,7 +19,6 @@ export interface GeneratedDocuments {
   featureManual: string;
   testCases: TestCase[];
   userStories: UserStory[];
-  accessibilityChecklist: AccessibilityCheck[];
 }
 
 export interface HistoryItem {

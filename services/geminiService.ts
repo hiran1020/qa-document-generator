@@ -25,7 +25,7 @@ const responseSchema = {
         },
         testCases: {
             type: Type.ARRAY,
-            description: "Generate an exhaustive list of at least 25-30 highly detailed test cases covering all aspects of the feature: Positive Scenarios, Negative Scenarios, Edge Cases, and UI/UX Tests. For each test case, assign a priority (High, Medium, Low) based on its criticality to the feature's core function.",
+            description: "Generate an exhaustive list of at least 50 - 150 highly detailed based on the requirement test cases covering all aspects of the feature: Positive Scenarios, Negative Scenarios, Edge Cases, and UI/UX Tests. For each test case, assign a priority (High, Medium, Low) based on its criticality to the feature's core function.",
             items: {
                 type: Type.OBJECT,
                 properties: {
@@ -41,33 +41,19 @@ const responseSchema = {
         },
         userStories: {
             type: Type.ARRAY,
-            description: "A list of well-defined user stories derived directly from the feature's purpose. For each story, provide detailed acceptance criteria, a priority, and an estimation of effort to aid in backlog grooming.",
+            description: "A list of well-defined user stories derived directly from the feature's purpose. For each story, provide detailed acceptance criteria that clearly define the requirements.",
             items: {
                 type: Type.OBJECT,
                 properties: {
                     story: { type: Type.STRING, description: "The user story in the format 'As a [user type], I want [to do something] so that [I can achieve some goal].'" },
-                    priority: { type: Type.STRING, description: "The priority of the user story for development planning.", enum: ['High', 'Medium', 'Low'] },
                     acceptanceCriteria: { type: Type.ARRAY, description: "A list of specific, testable acceptance criteria, ideally using Gherkin syntax (Given/When/Then).", items: { type: Type.STRING } },
-                    estimationPoints: { type: Type.INTEGER, description: "A story point estimation for development effort, using a Fibonacci-like number (1, 2, 3, 5, 8, 13)." }
+                
                 },
-                 required: ["story", "priority", "acceptanceCriteria", "estimationPoints"],
+                 required: ["story", "acceptanceCriteria" ],
             }
         },
-        accessibilityChecklist: {
-            type: Type.ARRAY,
-            description: "A checklist of at least 15-20 specific, actionable accessibility tests based on WCAG 2.1 AA guidelines, relevant to the feature's UI. Each test suggestion must be highly practical and directly applicable to the elements seen in the media.",
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    wcagGuideline: { type: Type.STRING, description: "The relevant WCAG 2.1 guideline reference (e.g., '1.1.1 Non-text Content')." },
-                    description: { type: Type.STRING, description: "A brief explanation of the guideline." },
-                    testSuggestion: { type: Type.STRING, description: "A highly practical and actionable suggestion for how to test this on the current feature. e.g., 'Verify the 'Submit' button has an `aria-label` of 'Submit user data'."}
-                },
-                required: ["wcagGuideline", "description", "testSuggestion"],
-            }
-        }
     },
-    required: ["testPlan", "qaDocument", "featureManual", "testCases", "userStories", "accessibilityChecklist"],
+    required: ["testPlan", "qaDocument", "featureManual", "testCases", "userStories"],
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

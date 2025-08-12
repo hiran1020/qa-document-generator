@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Test</title>
+    <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <h1>PDF Generation Test</h1>
+    <button onclick="generateTestPDF()">Generate Test PDF</button>
+    
+    <script>
+        function generateTestPDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFontSize(20);
+                doc.text('Test PDF Document', 20, 30);
+                doc.setFontSize(12);
+                doc.text('This is a test PDF generated successfully!', 20, 50);
+                
+                const blob = new Blob([doc.output('blob')], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'test.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('PDF generated successfully!');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

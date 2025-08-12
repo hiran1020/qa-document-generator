@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import JSZip from 'jszip';
-import { GeneratedDocuments, TestCase, UserStory, AccessibilityCheck } from '../types';
+import { GeneratedDocuments, TestCase, UserStory } from '../types';
 import { Tab } from './Tab';
+import { generatePDF } from '../services/pdfService';
 
 interface OutputDisplayProps {
   documents: GeneratedDocuments | null;
@@ -12,7 +13,7 @@ interface OutputDisplayProps {
   documentTitle: string;
 }
 
-type ActiveTab = 'plan' | 'qa' | 'manual' | 'cases' | 'stories' | 'a11y';
+type ActiveTab = 'plan' | 'qa' | 'manual' | 'cases' | 'stories';
 
 const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
@@ -39,6 +40,12 @@ const DownloadZipIcon: React.FC<{ className?: string }> = ({ className }) => (
       <path d="M2.5 4.75A.75.75 0 0 1 3.25 4h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 2.5 4.75Z" />
       <path fillRule="evenodd" d="M8.25 3.5A1.75 1.75 0 0 0 6.5 5.25v2.25H4.326a2.25 2.25 0 0 0-1.743.832L.52 11.256A1.5 1.5 0 0 0 1.83 13.5h5.594A4.502 4.502 0 0 1 12.5 15.25a.75.75 0 0 0 1.5 0A.75.75 0 0 0 14 14.5a3 3 0 0 0-2.343-2.918l.09-.057a.75.75 0 0 0 .343-1.018l-.796-1.38a.75.75 0 0 0-1.018-.343l-.796 1.38a3.003 3.003 0 0 0-2.433-1.482V5.25A.25.25 0 0 1 6.75 5h1.5a.75.75 0 0 0 0-1.5h-1.5Z" clipRule="evenodd" />
       <path d="m12.31 8.22 3.25-3.25a.75.75 0 0 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06-1.06ZM14.75 16a.75.75 0 0 1-.75-.75V10.5a.75.75 0 0 1 1.5 0v4.75a.75.75 0 0 1-.75-.75Z" />
+    </svg>
+);
+
+const PDFIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
     </svg>
 );
 
@@ -118,21 +125,9 @@ const UserStoriesDisplay: React.FC<{ stories: UserStory[] }> = ({ stories }) => 
     <div className="space-y-6">
         {stories.map((story, index) => (
             <div key={index} className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/80 shadow-md">
-                <div className="flex justify-between items-start gap-4">
-                    <blockquote className="border-l-4 border-cyan-400 pl-4 italic text-slate-200 text-lg flex-1">
-                        {story.story}
-                    </blockquote>
-                    <div className="flex-shrink-0 flex items-center gap-3">
-                        <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            story.priority === 'High' ? 'bg-red-500/20 text-red-300' :
-                            story.priority === 'Medium' ? 'bg-amber-500/20 text-amber-300' :
-                            'bg-green-500/20 text-green-300'
-                        }`}>
-                            {story.priority}
-                        </span>
-                        <span className="inline-block bg-sky-800/70 text-sky-300 text-sm font-bold px-3 py-1 rounded-full">{story.estimationPoints} Points</span>
-                    </div>
-                </div>
+                <blockquote className="border-l-4 border-cyan-400 pl-4 italic text-slate-200 text-lg">
+                    {story.story}
+                </blockquote>
                 <h4 className="mt-4 mb-2 text-md font-semibold text-slate-200 uppercase tracking-wider">Acceptance Criteria</h4>
                 <ul className="list-disc list-inside space-y-2 text-slate-300">
                     {story.acceptanceCriteria.map((criterion, i) => <li key={i} className="pl-2">{criterion}</li>)}
@@ -142,33 +137,11 @@ const UserStoriesDisplay: React.FC<{ stories: UserStory[] }> = ({ stories }) => 
     </div>
 );
 
-const AccessibilityChecklistDisplay: React.FC<{ checklist: AccessibilityCheck[] }> = ({ checklist }) => (
-    <div className="overflow-x-auto rounded-lg border border-slate-700">
-        <table className="min-w-full divide-y divide-slate-700">
-            <thead className="bg-slate-800/70">
-                <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Guideline</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Description</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Test Suggestion</th>
-                </tr>
-            </thead>
-            <tbody className="bg-slate-900/50 divide-y divide-slate-800">
-                {checklist.map((item, i) => (
-                    <tr key={i} className={`transition-colors duration-200 hover:bg-slate-700/50 ${i % 2 === 0 ? 'bg-slate-800/40' : ''}`}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-cyan-400">{item.wcagGuideline}</td>
-                        <td className="px-6 py-4 whitespace-normal text-sm text-slate-300 max-w-md">{item.description}</td>
-                        <td className="px-6 py-4 whitespace-normal text-sm text-slate-300">{item.testSuggestion}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    </div>
-);
-
 
 export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoading, progress, loadingMessage, documentTitle }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('plan');
   const [isCopied, setIsCopied] = useState(false);
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
   const sanitizeForFilename = (name: string) => {
     return name.replace(/[\s\\/:"*?<>|]+/g, '_').replace(/_{2,}/g, '_');
@@ -226,17 +199,49 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
               break;
           case 'stories':
               const storiesMd = documents.userStories.map(s => 
-                  `> ${s.story}\n\n**Priority:** ${s.priority} | **Story Points:** ${s.estimationPoints}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`
+                  `> ${s.story}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`
               ).join('\n\n---\n\n');
               downloadBlob(new Blob([storiesMd], { type: 'text/markdown;charset=utf-8' }), `${baseName}_User-Stories.md`);
               break;
-          case 'a11y':
-              const a11yHeader = '| Guideline | Description | Test Suggestion |\n|---|---|---|\n';
-              const a11yMd = documents.accessibilityChecklist.map(item => 
-                  `| ${item.wcagGuideline} | ${item.description} | ${item.testSuggestion} |`
-              ).join('\n');
-              downloadBlob(new Blob([a11yHeader + a11yMd], { type: 'text/markdown;charset=utf-8' }), `${baseName}_Accessibility-Checklist.md`);
-              break;
+      }
+  };
+
+  const handleDownloadPDF = async () => {
+      if (!documents || isPdfGenerating) return;
+      
+      const baseName = sanitizeForFilename(documentTitle);
+      setIsPdfGenerating(true);
+
+      try {
+          let pdfBlob: Blob;
+
+          switch(activeTab) {
+              case 'plan':
+                  pdfBlob = generatePDF.testPlan(documents.testPlan, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_Test-Plan.pdf`);
+                  break;
+              case 'qa':
+                  pdfBlob = generatePDF.qaDocument(documents.qaDocument, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_QA-Document.pdf`);
+                  break;
+              case 'manual':
+                  pdfBlob = generatePDF.featureManual(documents.featureManual, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_Feature-Manual.pdf`);
+                  break;
+              case 'cases':
+                  pdfBlob = generatePDF.testCases(documents.testCases, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_Test-Cases.pdf`);
+                  break;
+              case 'stories':
+                  pdfBlob = generatePDF.userStories(documents.userStories, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_User-Stories.pdf`);
+                  break;
+          }
+      } catch (error) {
+          console.error('Error generating PDF:', error);
+          alert('Failed to generate PDF. Please try again.');
+      } finally {
+          setIsPdfGenerating(false);
       }
   };
   
@@ -279,14 +284,8 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
             break;
         case 'stories':
              contentToCopy = documents.userStories.map(s => 
-                `> ${s.story}\n\n**Priority:** ${s.priority} | **Story Points:** ${s.estimationPoints}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`
+                `> ${s.story}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`
             ).join('\n\n---\n\n');
-            break;
-        case 'a11y':
-            const a11yHeader = 'Guideline\tDescription\tTest Suggestion\n';
-            contentToCopy = a11yHeader + documents.accessibilityChecklist.map(item => 
-                [item.wcagGuideline, item.description, item.testSuggestion].join('\t')
-            ).join('\n');
             break;
     }
     try {
@@ -304,18 +303,14 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
     const zip = new JSZip();
     const baseName = sanitizeForFilename(documentTitle);
 
+    // Add Markdown files
     zip.file(`${baseName}_Test-Plan.md`, documents.testPlan);
     zip.file(`${baseName}_QA-Document.md`, documents.qaDocument);
     zip.file(`${baseName}_Feature-Manual.md`, documents.featureManual);
 
     // Add User Stories MD
-    const storiesMd = documents.userStories.map(s => `> ${s.story}\n\n**Priority:** ${s.priority} | **Story Points:** ${s.estimationPoints}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`).join('\n\n---\n\n');
+    const storiesMd = documents.userStories.map(s => `> ${s.story}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`).join('\n\n---\n\n');
     zip.file(`${baseName}_User-Stories.md`, storiesMd);
-
-    // Add Accessibility Checklist MD
-    const a11yHeader = '| Guideline | Description | Test Suggestion |\n|---|---|---|\n';
-    const a11yMd = documents.accessibilityChecklist.map(item => `| ${item.wcagGuideline} | ${item.description} | ${item.testSuggestion} |`).join('\n');
-    zip.file(`${baseName}_Accessibility-Checklist.md`, a11yHeader + a11yMd);
     
     // Add Test Cases CSV
     const escapeCsvCell = (data: any) => {
@@ -328,6 +323,25 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
     const csvHeader = 'Priority,ID,Description,Pre-conditions,Steps,Expected Result\n';
     const csvRows = documents.testCases.map(tc => [escapeCsvCell(tc.priority), escapeCsvCell(tc.id), escapeCsvCell(tc.description), escapeCsvCell(tc.preConditions.map(pre => `- ${pre}`).join('\n')), escapeCsvCell(tc.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')), escapeCsvCell(tc.expectedResult)].join(','));
     zip.file(`${baseName}_Test-Cases.csv`, csvHeader + csvRows.join('\n'));
+
+    // Add PDF files
+    try {
+      const testPlanPdf = generatePDF.testPlan(documents.testPlan, baseName);
+      const qaDocPdf = generatePDF.qaDocument(documents.qaDocument, baseName);
+      const manualPdf = generatePDF.featureManual(documents.featureManual, baseName);
+      const testCasesPdf = generatePDF.testCases(documents.testCases, baseName);
+      const userStoriesPdf = generatePDF.userStories(documents.userStories, baseName);
+
+      // Convert blobs to ArrayBuffer for JSZip
+      zip.file(`${baseName}_Test-Plan.pdf`, await testPlanPdf.arrayBuffer());
+      zip.file(`${baseName}_QA-Document.pdf`, await qaDocPdf.arrayBuffer());
+      zip.file(`${baseName}_Feature-Manual.pdf`, await manualPdf.arrayBuffer());
+      zip.file(`${baseName}_Test-Cases.pdf`, await testCasesPdf.arrayBuffer());
+      zip.file(`${baseName}_User-Stories.pdf`, await userStoriesPdf.arrayBuffer());
+    } catch (error) {
+      console.error('Error generating PDFs for ZIP:', error);
+      alert('Warning: Some PDFs could not be generated for the ZIP file.');
+    }
     
     const zipBlob = await zip.generateAsync({ type: "blob" });
     downloadBlob(zipBlob, `${baseName}_QA-Documents.zip`);
@@ -372,21 +386,28 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
             <Tab label="Manual" isActive={activeTab === 'manual'} onClick={() => setActiveTab('manual')} />
             <Tab label="Test Cases" isActive={activeTab === 'cases'} onClick={() => setActiveTab('cases')} />
             <Tab label="User Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
-            <Tab label="A11y Checklist" isActive={activeTab === 'a11y'} onClick={() => setActiveTab('a11y')} />
           </nav>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0 self-end sm:self-center">
            <button onClick={handleCopy} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-cyan-500">
              {isCopied ? <CheckIcon className="w-4 h-4 text-green-400" /> : <CopyIcon className="w-4 h-4" />}
-             {isCopied ? 'Copied!' : 'Copy'}
+             <span className="hidden sm:inline">{isCopied ? 'Copied!' : 'Copy'}</span>
            </button>
            <button onClick={handleDownload} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-cyan-500">
              <DownloadIcon className="w-4 h-4" />
-             Download
+             <span className="hidden sm:inline">Download</span>
+           </button>
+           <button onClick={handleDownloadPDF} disabled={isPdfGenerating} className="flex items-center gap-2 px-3 py-1.5 bg-red-600/50 hover:bg-red-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-red-100 hover:text-white disabled:text-slate-400 font-semibold text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-red-500">
+             {isPdfGenerating ? (
+               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+             ) : (
+               <PDFIcon className="w-4 h-4" />
+             )}
+             <span className="hidden sm:inline">{isPdfGenerating ? 'Generating...' : 'PDF'}</span>
            </button>
             <button onClick={handleDownloadZip} className="flex items-center gap-2 px-3 py-1.5 bg-cyan-600/50 hover:bg-cyan-600 text-cyan-100 hover:text-white font-semibold text-sm rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-cyan-500">
              <DownloadZipIcon className="w-4 h-4" />
-             Download All (.zip)
+             <span className="hidden sm:inline">All (.zip)</span>
            </button>
         </div>
       </div>
@@ -397,7 +418,6 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
         {activeTab === 'manual' && <DocumentViewer content={documents.featureManual} />}
         {activeTab === 'cases' && <TestCasesTable testCases={documents.testCases} />}
         {activeTab === 'stories' && <UserStoriesDisplay stories={documents.userStories} />}
-        {activeTab === 'a11y' && <AccessibilityChecklistDisplay checklist={documents.accessibilityChecklist} />}
       </div>
     </div>
   );
