@@ -52,8 +52,16 @@ const responseSchema = {
                  required: ["story", "acceptanceCriteria" ],
             }
         },
+        smokeTestSuite: {
+            type: Type.STRING,
+            description: "A comprehensive smoke test suite document in Markdown format that focuses on critical path validation and quick build verification. It MUST include: 1. **Overview**: Brief description of the smoke testing purpose and scope for this feature. 2. **Critical Path Scenarios**: Identify the most important user journeys and core functionality that must work for the application to be considered functional. 3. **Quick Build Verification Tests**: List of automated and manual tests that can be executed quickly (under 30 minutes) to verify basic functionality after each build. 4. **Pre-deployment Sanity Checks**: Essential validation steps that must pass before any deployment to production, including environment checks, core API validations, and basic UI functionality. 5. **Test Execution Guidelines**: Clear instructions on when to run smoke tests, expected execution time, and pass/fail criteria. 6. **Automation Priorities**: Recommendations for which smoke tests should be automated first, including rationale and technical considerations. 7. **Failure Response Protocol**: Steps to take when smoke tests fail, including rollback procedures and escalation paths.",
+        },
+        regressionTestPlan: {
+            type: Type.STRING,
+            description: "A detailed regression test plan in Markdown format that ensures existing functionality remains intact. It MUST include: 1. **Regression Testing Strategy**: Define the overall approach to regression testing for this feature, including frequency, scope, and integration with the development cycle. 2. **Impact Analysis Methodology**: Detailed process for analyzing code changes and determining which areas of the application might be affected, including dependency mapping and risk assessment techniques. 3. **Test Selection Criteria**: Clear guidelines for selecting which existing test cases to include in regression suites based on risk, coverage, and change impact. Include criteria for full regression vs. selective regression testing. 4. **Test Suite Organization**: Structure regression tests into logical groups (e.g., critical path, feature-specific, integration, UI) with clear prioritization. 5. **Automation Strategy**: Comprehensive plan for automating regression tests, including tool recommendations, maintenance strategies, and coverage goals. 6. **Release Validation Strategy**: Step-by-step process for validating releases using regression testing, including entry/exit criteria, sign-off procedures, and quality gates. 7. **Risk Mitigation**: Identify potential risks in regression testing and mitigation strategies, such as test environment issues, data dependencies, and timing constraints.",
+        },
     },
-    required: ["testPlan", "qaDocument", "featureManual", "testCases", "userStories"],
+    required: ["testPlan", "qaDocument", "featureManual", "testCases", "userStories", "smokeTestSuite", "regressionTestPlan"],
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -210,7 +218,7 @@ The documents must be exceptionally detailed, specific, and tailored to the feat
         try {
             const parsedJson = JSON.parse(jsonText);
         
-            if (!parsedJson.testPlan || !parsedJson.testCases || !parsedJson.userStories) {
+            if (!parsedJson.testPlan || !parsedJson.testCases || !parsedJson.userStories || !parsedJson.smokeTestSuite || !parsedJson.regressionTestPlan) {
                 throw new Error("AI response is missing required fields.");
             }
 

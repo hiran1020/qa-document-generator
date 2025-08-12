@@ -13,7 +13,7 @@ interface OutputDisplayProps {
   documentTitle: string;
 }
 
-type ActiveTab = 'plan' | 'qa' | 'manual' | 'cases' | 'stories';
+type ActiveTab = 'plan' | 'qa' | 'manual' | 'cases' | 'stories' | 'smoke' | 'regression';
 
 const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
@@ -203,6 +203,12 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
               ).join('\n\n---\n\n');
               downloadBlob(new Blob([storiesMd], { type: 'text/markdown;charset=utf-8' }), `${baseName}_User-Stories.md`);
               break;
+          case 'smoke':
+              downloadBlob(new Blob([documents.smokeTestSuite], { type: 'text/markdown;charset=utf-8' }), `${baseName}_Smoke-Test-Suite.md`);
+              break;
+          case 'regression':
+              downloadBlob(new Blob([documents.regressionTestPlan], { type: 'text/markdown;charset=utf-8' }), `${baseName}_Regression-Test-Plan.md`);
+              break;
       }
   };
 
@@ -235,6 +241,14 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
               case 'stories':
                   pdfBlob = generatePDF.userStories(documents.userStories, baseName);
                   downloadBlob(pdfBlob, `${baseName}_User-Stories.pdf`);
+                  break;
+              case 'smoke':
+                  pdfBlob = generatePDF.smokeTestSuite(documents.smokeTestSuite, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_Smoke-Test-Suite.pdf`);
+                  break;
+              case 'regression':
+                  pdfBlob = generatePDF.regressionTestPlan(documents.regressionTestPlan, baseName);
+                  downloadBlob(pdfBlob, `${baseName}_Regression-Test-Plan.pdf`);
                   break;
           }
       } catch (error) {
@@ -287,6 +301,12 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
                 `> ${s.story}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`
             ).join('\n\n---\n\n');
             break;
+        case 'smoke':
+            contentToCopy = documents.smokeTestSuite;
+            break;
+        case 'regression':
+            contentToCopy = documents.regressionTestPlan;
+            break;
     }
     try {
         await navigator.clipboard.writeText(contentToCopy);
@@ -303,16 +323,22 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
     const zip = new JSZip();
     const baseName = sanitizeForFilename(documentTitle);
 
-    // Add Markdown files
-    zip.file(`${baseName}_Test-Plan.md`, documents.testPlan);
-    zip.file(`${baseName}_QA-Document.md`, documents.qaDocument);
-    zip.file(`${baseName}_Feature-Manual.md`, documents.featureManual);
+    // Create folders for organized structure
+    const markdownFolder = zip.folder("Markdown_CSV");
+    const pdfFolder = zip.folder("PDF");
 
-    // Add User Stories MD
+    // Add Markdown files to the Markdown_CSV folder
+    markdownFolder?.file(`${baseName}_Test-Plan.md`, documents.testPlan);
+    markdownFolder?.file(`${baseName}_QA-Document.md`, documents.qaDocument);
+    markdownFolder?.file(`${baseName}_Feature-Manual.md`, documents.featureManual);
+    markdownFolder?.file(`${baseName}_Smoke-Test-Suite.md`, documents.smokeTestSuite);
+    markdownFolder?.file(`${baseName}_Regression-Test-Plan.md`, documents.regressionTestPlan);
+
+    // Add User Stories MD to the Markdown_CSV folder
     const storiesMd = documents.userStories.map(s => `> ${s.story}\n\n**Acceptance Criteria:**\n${s.acceptanceCriteria.map(ac => `- ${ac}`).join('\n')}`).join('\n\n---\n\n');
-    zip.file(`${baseName}_User-Stories.md`, storiesMd);
+    markdownFolder?.file(`${baseName}_User-Stories.md`, storiesMd);
     
-    // Add Test Cases CSV
+    // Add Test Cases CSV to the Markdown_CSV folder (not PDF folder)
     const escapeCsvCell = (data: any) => {
         const str = String(data || '');
         if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -322,22 +348,26 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
     };
     const csvHeader = 'Priority,ID,Description,Pre-conditions,Steps,Expected Result\n';
     const csvRows = documents.testCases.map(tc => [escapeCsvCell(tc.priority), escapeCsvCell(tc.id), escapeCsvCell(tc.description), escapeCsvCell(tc.preConditions.map(pre => `- ${pre}`).join('\n')), escapeCsvCell(tc.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')), escapeCsvCell(tc.expectedResult)].join(','));
-    zip.file(`${baseName}_Test-Cases.csv`, csvHeader + csvRows.join('\n'));
+    markdownFolder?.file(`${baseName}_Test-Cases.csv`, csvHeader + csvRows.join('\n'));
 
-    // Add PDF files
+    // Add PDF files to the PDF folder
     try {
       const testPlanPdf = generatePDF.testPlan(documents.testPlan, baseName);
       const qaDocPdf = generatePDF.qaDocument(documents.qaDocument, baseName);
       const manualPdf = generatePDF.featureManual(documents.featureManual, baseName);
       const testCasesPdf = generatePDF.testCases(documents.testCases, baseName);
       const userStoriesPdf = generatePDF.userStories(documents.userStories, baseName);
+      const smokeTestSuitePdf = generatePDF.smokeTestSuite(documents.smokeTestSuite, baseName);
+      const regressionTestPlanPdf = generatePDF.regressionTestPlan(documents.regressionTestPlan, baseName);
 
-      // Convert blobs to ArrayBuffer for JSZip
-      zip.file(`${baseName}_Test-Plan.pdf`, await testPlanPdf.arrayBuffer());
-      zip.file(`${baseName}_QA-Document.pdf`, await qaDocPdf.arrayBuffer());
-      zip.file(`${baseName}_Feature-Manual.pdf`, await manualPdf.arrayBuffer());
-      zip.file(`${baseName}_Test-Cases.pdf`, await testCasesPdf.arrayBuffer());
-      zip.file(`${baseName}_User-Stories.pdf`, await userStoriesPdf.arrayBuffer());
+      // Convert blobs to ArrayBuffer for JSZip and add to PDF folder
+      pdfFolder?.file(`${baseName}_Test-Plan.pdf`, await testPlanPdf.arrayBuffer());
+      pdfFolder?.file(`${baseName}_QA-Document.pdf`, await qaDocPdf.arrayBuffer());
+      pdfFolder?.file(`${baseName}_Feature-Manual.pdf`, await manualPdf.arrayBuffer());
+      pdfFolder?.file(`${baseName}_Test-Cases.pdf`, await testCasesPdf.arrayBuffer());
+      pdfFolder?.file(`${baseName}_User-Stories.pdf`, await userStoriesPdf.arrayBuffer());
+      pdfFolder?.file(`${baseName}_Smoke-Test-Suite.pdf`, await smokeTestSuitePdf.arrayBuffer());
+      pdfFolder?.file(`${baseName}_Regression-Test-Plan.pdf`, await regressionTestPlanPdf.arrayBuffer());
     } catch (error) {
       console.error('Error generating PDFs for ZIP:', error);
       alert('Warning: Some PDFs could not be generated for the ZIP file.');
@@ -386,6 +416,8 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
             <Tab label="Manual" isActive={activeTab === 'manual'} onClick={() => setActiveTab('manual')} />
             <Tab label="Test Cases" isActive={activeTab === 'cases'} onClick={() => setActiveTab('cases')} />
             <Tab label="User Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
+            <Tab label="Smoke Tests" isActive={activeTab === 'smoke'} onClick={() => setActiveTab('smoke')} />
+            <Tab label="Regression" isActive={activeTab === 'regression'} onClick={() => setActiveTab('regression')} />
           </nav>
         </div>
         <div className="flex flex-wrap items-center gap-2 flex-shrink-0 self-end sm:self-center">
@@ -418,6 +450,8 @@ export const OutputDisplay: React.FC<OutputDisplayProps> = ({ documents, isLoadi
         {activeTab === 'manual' && <DocumentViewer content={documents.featureManual} />}
         {activeTab === 'cases' && <TestCasesTable testCases={documents.testCases} />}
         {activeTab === 'stories' && <UserStoriesDisplay stories={documents.userStories} />}
+        {activeTab === 'smoke' && <DocumentViewer content={documents.smokeTestSuite} />}
+        {activeTab === 'regression' && <DocumentViewer content={documents.regressionTestPlan} />}
       </div>
     </div>
   );

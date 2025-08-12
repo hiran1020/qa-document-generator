@@ -19,6 +19,8 @@ export interface GeneratedDocuments {
   featureManual: string;
   testCases: TestCase[];
   userStories: UserStory[];
+  smokeTestSuite: string;
+  regressionTestPlan: string;
 }
 
 export interface HistoryItem {

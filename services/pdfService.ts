@@ -306,6 +306,42 @@ class PDFGenerator {
 
     return new Blob([this.doc.output('blob')], { type: 'application/pdf' });
   }
+
+  generateSmokeTestSuitePDF(content: string, title: string): Blob {
+    // Add title
+    this.addHeading(`Smoke Test Suite: ${title}`, 1);
+    this.currentY += 5;
+    
+    // Add generation timestamp
+    this.addText(`Generated on: ${new Date().toLocaleString()}`, {
+      fontSize: 10,
+      color: [128, 128, 128]
+    });
+    this.currentY += 10;
+
+    // Parse and add content
+    this.parseMarkdownContent(content);
+
+    return new Blob([this.doc.output('blob')], { type: 'application/pdf' });
+  }
+
+  generateRegressionTestPlanPDF(content: string, title: string): Blob {
+    // Add title
+    this.addHeading(`Regression Test Plan: ${title}`, 1);
+    this.currentY += 5;
+    
+    // Add generation timestamp
+    this.addText(`Generated on: ${new Date().toLocaleString()}`, {
+      fontSize: 10,
+      color: [128, 128, 128]
+    });
+    this.currentY += 10;
+
+    // Parse and add content
+    this.parseMarkdownContent(content);
+
+    return new Blob([this.doc.output('blob')], { type: 'application/pdf' });
+  }
 }
 
 export const generatePDF = {
@@ -332,5 +368,15 @@ export const generatePDF = {
   userStories: (userStories: UserStory[], title: string): Blob => {
     const generator = new PDFGenerator();
     return generator.generateUserStoriesPDF(userStories, title);
+  },
+
+  smokeTestSuite: (content: string, title: string): Blob => {
+    const generator = new PDFGenerator();
+    return generator.generateSmokeTestSuitePDF(content, title);
+  },
+
+  regressionTestPlan: (content: string, title: string): Blob => {
+    const generator = new PDFGenerator();
+    return generator.generateRegressionTestPlanPDF(content, title);
   }
 };
